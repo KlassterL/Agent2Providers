@@ -73,6 +73,7 @@ fn build_input(messages: &[Value]) -> Vec<Value> {
                 let text = content_text(message.get("content").unwrap_or(&Value::Null));
                 if !text.trim().is_empty() {
                     input.push(json!({
+                        "type": "message",
                         "role": "assistant",
                         "content": [{ "type": "output_text", "text": text }],
                     }));
@@ -117,6 +118,7 @@ fn build_input(messages: &[Value]) -> Vec<Value> {
             }
             _ => {
                 input.push(json!({
+                    "type": "message",
                     "role": "user",
                     "content": user_content(message),
                 }));
@@ -274,4 +276,29 @@ pub fn usage_of(value: &Value) -> (i64, i64, i64) {
         .and_then(Value::as_i64)
         .unwrap_or(0);
     (input, output, cached)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::build_request;
+    use serde_json::json;
+
+    #[test]
+    fn text_messages_use_codex_message_content_type() {
+        let request = build_request(
+            &json!({
+                "messages": [
+                    {"role": "user", "content": "probe"},
+                    {"role": "assistant", "content": "ack"},
+                ],
+            }),
+            "gpt-6-luna",
+            true,
+        );
+
+        assert_eq!(request["input"][0]["type"], "message");
+        assert_eq!(request["input"][0]["content"][0]["type"], "input_text");
+        assert_eq!(request["input"][1]["type"], "message");
+        assert_eq!(request["input"][1]["content"][0]["type"], "output_text");
+    }
 }

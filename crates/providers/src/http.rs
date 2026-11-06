@@ -195,21 +195,43 @@ pub async fn post_stream(
     body: &Value,
     accept: &str,
 ) -> Result<SseResponse, String> {
-    let mut request = client
-        .post(url)
-        .header("Accept", accept)
-        .header("Content-Type", "application/json")
-        .body(body.to_string());
-    for (key, value) in headers {
-        request = request.header(key, value);
-    }
-    let response = request.send().await.map_err(|error| describe(&error))?;
+    let response = post_stream_request(client, url, headers, body, accept)
+        .send()
+        .await
+        .map_err(|error| describe(&error))?;
     let status = response.status().as_u16();
     if !(200..300).contains(&status) {
         let text = response.text().await.unwrap_or_default();
         return Ok(SseResponse { status, response: None, error_body: Some(text) });
     }
     Ok(SseResponse { status, response: Some(response), error_body: None })
+}
+
+fn post_stream_request(
+    client: &reqwest::Client,
+    url: &str,
+    headers: &[(String, String)],
+    body: &Value,
+    accept: &str,
+) -> reqwest::RequestBuilder {
+    let has_accept = headers
+        .iter()
+        .any(|(key, _)| key.eq_ignore_ascii_case("accept"));
+    let has_content_type = headers
+        .iter()
+        .any(|(key, _)| key.eq_ignore_ascii_case("content-type"));
+    let mut request = client.post(url);
+    if !has_accept {
+        request = request.header("Accept", accept);
+    }
+    if !has_content_type {
+        request = request.header("Content-Type", "application/json");
+    }
+    request = request.body(body.to_string());
+    for (key, value) in headers {
+        request = request.header(key, value);
+    }
+    request
 }
 
 /// [`post_stream`] 的结果。
@@ -359,4 +381,46 @@ pub fn now_ms() -> i64 {
         .duration_since(std::time::UNIX_EPOCH)
         .map(|duration| duration.as_millis() as i64)
         .unwrap_or(0)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::post_stream_request;
+    use serde_json::json;
+
+    #[test]
+    fn post_stream_has_only_one_content_type_and_accept_header() {
+        let client = reqwest::Client::new();
+        let headers = vec![
+            ("Content-Type".to_string(), "application/json".to_string()),
+            ("Accept".to_string(), "text/event-stream".to_string()),
+        ];
+
+        let request = post_stream_request(
+            &client,
+            "https://example.invalid/v1/responses",
+            &headers,
+            &json!({"input": "probe"}),
+            "text/event-stream",
+        )
+        .build()
+        .expect("request should build");
+
+        assert_eq!(
+            request
+                .headers()
+                .get_all(reqwest::header::CONTENT_TYPE)
+                .iter()
+                .count(),
+            1
+        );
+        assert_eq!(
+            request
+                .headers()
+                .get_all(reqwest::header::ACCEPT)
+                .iter()
+                .count(),
+            1
+        );
+    }
 }

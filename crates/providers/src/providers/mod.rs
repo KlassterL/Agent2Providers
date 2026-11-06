@@ -64,6 +64,8 @@ pub mod doubaowork;
 pub mod kiro;
 #[cfg(feature = "astudio")]
 pub mod astudio;
+#[cfg(feature = "codex")]
+pub mod codex;
 
 use agent2api_provider_sdk::BoxProvider;
 
@@ -185,6 +187,9 @@ pub fn registry() -> Vec<BoxProvider> {
 
     #[cfg(feature = "astudio")]
     list.push(Box::new(astudio::AStudioProvider));
+
+    #[cfg(feature = "codex")]
+    list.push(Box::new(codex::adapter::CodexProvider));
 
     list
 }

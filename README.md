@@ -44,6 +44,7 @@ Capabilities supplied by Provider Enhancement. The table lists the currently ena
 | Doubao Work | Implemented; unverified (chat / image generation) | ✗ | Implemented; unverified | Implemented; unverified | Implemented; unverified | Implemented; unverified |
 | Kiro | ✓ (chat / tools / thinking / image input) | ✓ | ✓ | ✓ | ✗ | — |
 | AStudio (iFlytek Astron Studio) | ✓ (chat / tools / thinking / image input) | ✗ | ✓ | ✓ | ✓ (daily sign-in credits) | — |
+| Codex | ✓ (chat / tools / thinking / image input / generation / reference editing) | ✓ | ✓  | ✗ | ✗ | ✗ |
 
 Custom providers remain a gateway feature and do not require this plugin. They support model requests and model-list fetching; other capabilities depend on the service you configure. API account creation skips a second proxy save only for `proxySaved: true`; older gateways retain a compatibility save and verification warning. Failure does not remove an added account or falsely report that its proxy was saved.
 
